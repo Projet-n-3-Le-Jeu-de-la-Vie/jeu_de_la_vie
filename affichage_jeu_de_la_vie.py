@@ -26,6 +26,8 @@ def idx_to_coord(i, j):
     :returns: Les coordonnées des deux points pour remplir le rectangle.
     :rtype: un tuple contenant deux tuples.
     """
+    i -= jdlv.rab_bordure
+    j -= jdlv.rab_bordure
     # on calcule d'abord les coordonnées des points
     x1 = grid_size * j - 1
     y1 = grid_size * i - 1
@@ -45,7 +47,8 @@ def coord_to_idx(x, y):
     :returns: Les coordonnées de la grille.
     :rtype: tuple.
     """
-    return (y // grid_size, x // grid_size)
+    return (y // grid_size + jdlv.rab_bordure,
+            x // grid_size + jdlv.rab_bordure)
 
 
 # ==============================================================================
@@ -117,7 +120,7 @@ def clean_grid(event=None):
 # ================================================
 
 
-def en_boucle():
+def en_boucle(boucle=True):
     """Permet de jouer en boucle la simulation du jeu de la vie."""
     global grille, n_generations
 
@@ -131,8 +134,9 @@ def en_boucle():
         n_generations += 1
         VarLabelGenerations.set(n_generations)
 
-        # et on refait appel à cette fonction la fonction
-        root.after(1, en_boucle)
+        if boucle:
+            # et on refait appel à cette fonction la fonction
+            root.after(1, en_boucle)
 
 
 def play(event=None):
@@ -172,19 +176,19 @@ def generation_aleatoire_de_grille():
     return grille
 
 
-nlignes = 14 + (jdlv.rab_bordure * 2)
-ncolonnes = 36 + (jdlv.rab_bordure * 2)
+nlignes = 25 + (jdlv.rab_bordure * 2)
+ncolonnes = 40 + (jdlv.rab_bordure * 2)
 grille = jdlv.grille_vide(nlignes, ncolonnes)
 
 # grid_size est la variable qui définit la taille du côté d'un carré (donc sa largeur et sa longueur)
 grid_size = 25
-cwidth = ncolonnes * grid_size
-cheight = nlignes * grid_size
+cwidth = (ncolonnes - (jdlv.rab_bordure * 2)) * grid_size
+cheight = (nlignes - (jdlv.rab_bordure * 2)) * grid_size
 
 if __name__ == "__main__":
 
     # variable qui permet d'arrêter la simulation
-    play_flag = bool()
+    play_flag = True
 
     # variable qui nous permet de compter le nombre de générations
     n_generations = int()
@@ -255,6 +259,11 @@ if __name__ == "__main__":
     # on créer un bouton (à remplacer par un truc plus propre) pour sauvegarder la grille créée
     save_button = Button(main_frame, text='save', command=lambda: jdlv.sauvegarder_grille(grille))
     save_button.pack()
+
+    # TEST
+    # one_button = Button(main_frame, text="prochaine génération", command=lambda: en_boucle(False))
+    # one_button.pack()
+
 
     display_grid(grille)
 

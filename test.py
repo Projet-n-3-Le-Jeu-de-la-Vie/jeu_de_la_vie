@@ -7,17 +7,19 @@ project_folder = path.dirname(__file__)
 # on créer un dictionnaire avec des le nom du fichier à tester en clef et le nombre
 # d'itérations à faire pour que le test soit celui prévu
 a_tester = {
-    "regles_de_base.txt" : 1,
-    "balise.txt" : 1,
-    "bateau.txt" : 1,
-    "bloc.txt" : 1,
-    "clignotant.txt" : 1,
-    "grenouille.txt" : 1,
-    "mare.txt" : 1,
-    "pain.txt" : 1,
-    "cthulhu.txt" : 1,
-    "pulsar.txt" : 3,
-    "pentadecathlon.txt" : 15,
+    "regles_de_base.txt" : 1,     # structure qui teste les règles de bases du jeu de la vie
+    "bateau.txt" : 1,             # structure stable
+    "bloc.txt" : 1,               # structure stable
+    "mare.txt" : 1,               # structure stable
+    "pain.txt" : 1,               # structure stable
+    "cthulhu.txt" : 1,            # grande structure stable (composée de 45 cellules vivantes)
+    "balise.txt" : 1,             # structure oscillante de période 2
+    "clignotant.txt" : 1,         # structure oscillante de période 2
+    "grenouille.txt" : 1,         # structure oscillante de période 2
+    "pulsar.txt" : 3,             # structure oscillante de période 3
+    "pentadecathlon.txt" : 15,    # structure oscillante de période 15
+
+    # structures quelconques dont on connait la prédisposition des cellules au bout de n itérations
     "test1.txt" : 4,
     "test2.txt" : 2,
     "test3.txt" : 6,
@@ -34,5 +36,6 @@ for structure, iterations in a_tester.items():
 
     # et on fait notre test
     assert lancer_jeu_console(iterations, structure_de_base, False) == structure_finale
+    print(structure, "testé !")
 
-print("Tout s'est bien déroulé !")
+print("\nTout s'est bien déroulé !")

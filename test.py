@@ -36,6 +36,6 @@ for structure, iterations in a_tester.items():
 
     # et on fait notre test
     assert lancer_jeu_console(iterations, structure_de_base, False) == structure_finale
-    print(structure, "testé !")
+    print(structure, "testé avec succès !")
 
 print("\nTout s'est bien déroulé !")

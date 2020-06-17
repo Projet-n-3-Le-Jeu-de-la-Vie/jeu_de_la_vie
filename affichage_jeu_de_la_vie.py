@@ -152,13 +152,17 @@ def play(event=None):
 # ================================================================
 
     
-def import_prefabs():
+def import_prefabs(nom):
     """Permet d'importer une grille préfabriquée."""
     global nlignes, ncolonnes, grille
 
     # on lit le fichier qui contient la grille :
-    fichier = path.join(project_folder, "prefabs/canon.txt")
-    grille = jdlv.lire_fichier(fichier)
+    fichier = path.join(project_folder, "tests/grilles_test/{}.txt".format(nom))
+    grille_test = jdlv.lire_fichier(fichier)
+    for l in range(len(grille_test)):
+        for c in range(len(grille_test[0])):
+            if grille_test[l][c] == 1:
+                grille[l + jdlv.rab_bordure][c + jdlv.rab_bordure] = 1
     display_grid(grille)
 
 
@@ -177,7 +181,7 @@ def generation_aleatoire_de_grille():
 
 
 nlignes = 25 + (jdlv.rab_bordure * 2)
-ncolonnes = 40 + (jdlv.rab_bordure * 2)
+ncolonnes = 36 + (jdlv.rab_bordure * 2)
 grille = jdlv.grille_vide(nlignes, ncolonnes)
 
 # grid_size est la variable qui définit la taille du côté d'un carré (donc sa largeur et sa longueur)
@@ -253,7 +257,7 @@ if __name__ == "__main__":
     random_button.pack()
 
     # on créer un bouton (à remplacer par un truc plus propre) pour insérer la grille du canon
-    import_button = Button(main_frame, text='import du canon', command=import_prefabs)
+    import_button = Button(main_frame, text='import du canon', command=lambda: import_prefabs(input("nom du fichier\n")))
     import_button.pack()
 
     # on créer un bouton (à remplacer par un truc plus propre) pour sauvegarder la grille créée

@@ -5,7 +5,7 @@ from os import path
 project_folder = path.dirname(__file__)
 
 # on créer un dictionnaire avec des le nom du fichier à tester en clef et le nombre
-# d'itérations à faire pour que le test soit celui prévu
+# d'itérations à faire en valeur pour que le test soit celui prévu
 a_tester = {
     "regles_de_base.txt" : 1,     # structure qui teste les règles de bases du jeu de la vie
     "bateau.txt" : 1,             # structure stable
@@ -30,9 +30,9 @@ a_tester = {
 
 for structure, iterations in a_tester.items():
     # et on lit le fichier qui nous donne la structure de base
-    structure_de_base = lire_fichier(path.join(project_folder, "tests/grilles_test/" + structure))
+    structure_de_base = lire_fichier(path.join(project_folder, "prefabs/" + structure))
     # on lit le fichier qui nous donne la structure finale
-    structure_finale = lire_fichier(path.join(project_folder, "tests/grilles_finales/" + structure))
+    structure_finale = lire_fichier(path.join(project_folder, "tests/" + structure))
 
     # et on fait notre test
     assert lancer_jeu_console(iterations, structure_de_base, False) == structure_finale

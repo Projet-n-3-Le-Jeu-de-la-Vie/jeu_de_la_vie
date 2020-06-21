@@ -17,14 +17,29 @@ def grille_vide(lignes, colonnes):
     return [[0] * (colonnes) for x in range(lignes)]
 
 
-def sauvegarder_grille(grille):
+def verifie_si_grille_vide(grille):
+    """Regarde si la grille donée est vide.
+    
+    :param grille: Grille de jeu.
+    :type grille: list.
+    
+    :returns: si la grille est vide.
+    :rtype: bool.
+    """
+    for lignes in grille:
+        for case in lignes:
+            if '1' in str(case):
+                return False
+    return True
+            
+
+def sauvegarder_grille(grille, file_name):
     """Sauvegarde la grille en un fichier texte pouvant être réimporté."""
-    nom = str(input("Nom du fichier :\n"))
-    with open(path.join(project_folder, "saves/{}.txt".format(nom)), 'w') as fichier:
-        for ligne in grille:
-            for char in ligne:
+    with open(file_name, 'w') as fichier:
+        for l in range(rab_bordure, len(grille) - rab_bordure):
+            for c in range(rab_bordure, len(grille[0]) - rab_bordure):
                 # on écrit chaque case de la grille une à une dans le fichier
-                fichier.write(str(char))
+                fichier.write(str(grille[l][c]))
             fichier.write('\n')
 
     print('réussi')

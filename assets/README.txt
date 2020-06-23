@@ -8,3 +8,5 @@ play button : xnimrodx (version modifiée)
 pause button : Freepik (version modifiée)
 setting button : Freepik (version modifiée)
 help button : Freepik
+save button : Freepik
+random button : Good Ware (version modifiée)

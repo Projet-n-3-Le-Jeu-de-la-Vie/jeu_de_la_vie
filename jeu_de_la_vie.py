@@ -42,7 +42,7 @@ def sauvegarder_grille(grille, file_name):
                 fichier.write(str(grille[l][c]))
             fichier.write('\n')
 
-    print('réussi')
+    print("Sauvegarde réussie ! Emplacement : {}.".format(file_name))
 
 
 def lire_fichier(fichier):

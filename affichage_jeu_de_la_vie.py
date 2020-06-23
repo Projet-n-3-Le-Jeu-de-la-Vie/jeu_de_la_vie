@@ -135,7 +135,7 @@ def en_boucle(boucle=True):
 
     if boucle:
         # et on refait appel à cette fonction la fonction
-        after_id = root.after(1, en_boucle)
+        after_id = root.after(2, en_boucle)
 
     if jdlv.verifie_si_grille_vide(grille):
         # si la grille est entièrement vide (bordures comprises), il est inutile de continuer
@@ -144,7 +144,18 @@ def en_boucle(boucle=True):
 
 def play(event=None):
     """Fonction qui fait se développer la grille en boucle."""
-    en_boucle()
+    global id_test, pause
+
+    if pause:
+        root.after_cancel(after_id)
+        play_canvas.delete(id_test)
+        id_test = play_canvas.create_image(width_images/2, height_images/2, image=play_image)
+        pause = False
+    else:
+        play_canvas.delete(id_test)
+        id_test = play_canvas.create_image(width_images/2, height_images/2, image=pause_image)
+        pause = True
+        en_boucle()
     
 
 # ================================================================
@@ -174,7 +185,7 @@ def import_prefabs(fichier):
         print("erreur\ntaille minimum requise : {}.".format(taille_req))
 
 
-def generation_aleatoire_de_grille():
+def generation_aleatoire_de_grille(event=False):
     """Génère une grille dont les cellules vivantes (1) sont aléatoirement disposée."""
     global grille
     grille = jdlv.grille_vide(nlignes, ncolonnes)
@@ -188,28 +199,12 @@ def generation_aleatoire_de_grille():
     return grille
 
 
-def change_taille(l, c):
-    global cellules, grille, nlignes, ncolonnes
-
-    nlignes = l + (jdlv.rab_bordure * 2)
-    ncolonnes = c + (jdlv.rab_bordure * 2)
-
-    grille = jdlv.grille_vide(nlignes, ncolonnes)
-    canvas.delete("all")
-    cellules = [[canvas.create_rectangle(idx_to_coord(l, c), outline="gray") for l in range(nlignes)] for c in range(ncolonnes)]
-    display_grid(grille)
-
-
-def debogage():
-    print(after_id)
-
-
 def choix_fichier(event):
     choix = listeCombo.get()
     clean_grid()
     if choix == "Choisir...":
         choix = askopenfilename(title="Charger ma grille",
-                                    initialdir=path.join(project_folder, "prefabs/"))
+                                initialdir=path.join(project_folder, "prefabs/"))
         if choix == '':
             return
     else:
@@ -218,7 +213,7 @@ def choix_fichier(event):
     import_prefabs(choix)
 
 
-def ask_to_save(grille):
+def ask_to_save(grille, event=False):
     file_name = asksaveasfilename(title="Sauvergarder ma grille", 
                                   defaultextension='.txt',
                                   filetypes = [("Fichier Texte", "*.txt"),
@@ -228,8 +223,8 @@ def ask_to_save(grille):
         jdlv.sauvegarder_grille(grille, file_name)
 
 
-nlignes = 24 + (jdlv.rab_bordure * 2)
-ncolonnes = 36 + (jdlv.rab_bordure * 2)
+nlignes = 25 + (jdlv.rab_bordure * 2)
+ncolonnes = 47 + (jdlv.rab_bordure * 2)
 grille = jdlv.grille_vide(nlignes, ncolonnes)
 
 # grid_size est la variable qui définit la taille du côté d'un carré (donc sa largeur et sa longueur)
@@ -242,6 +237,9 @@ if __name__ == "__main__":
     # variable qui permet de stopper l'exécution en boucle de l'affichage de la fenêtre
     after_id = "after#0"
 
+    # variable qui permet de savoir si le jeu est en pause ou non
+    pause = False
+
     # variable qui nous permet de compter le nombre de générations
     n_generations = 0
 
@@ -251,7 +249,9 @@ if __name__ == "__main__":
 
     root = Tk()
     root.title("Jeu de la vie")
+    root.iconbitmap(path.join(project_folder, "assets/icon.ico"))
     root.geometry("{}x{}".format(cwidth + 200, cheight + 150))
+    root.resizable(False, False)
 
     main_frame = Frame(root)
     main_frame.pack(side="right", fill="both")
@@ -286,10 +286,13 @@ if __name__ == "__main__":
     # on créer l'image pour mettre en pause ou pour reprendre la simulation du jeu
     play_image = PhotoImage(file=path.join(project_folder, "assets/play.png")).subsample(retrecicement_images)
     play_canvas = Canvas(evolution_frame, width=width_images, height=height_images, bg='#707070', bd=0, highlightthickness=0)
-    play_canvas.create_image(width_images/2, height_images/2, image=play_image)
+    id_test = play_canvas.create_image(width_images/2, height_images/2, image=play_image)
 
     play_canvas.bind("<Button-1>", play)
     play_canvas.pack(expand=True, side="left")
+
+    # on charge l'image de pause, sans l'afficher
+    pause_image = PhotoImage(file=path.join(project_folder, "assets/pause.png")).subsample(retrecicement_images)
 
     # on créer l'image pour passer à la génération suivante
     next_image = PhotoImage(file=path.join(project_folder, "assets/next.png")).subsample(retrecicement_images)
@@ -319,7 +322,7 @@ if __name__ == "__main__":
     combo_frame = Frame(setting_frame, bg="#404040")
     combo_frame.pack(expand=True)
 
-    labelChoix = Label(combo_frame, text="Choisir :", bg="#404040", fg="white", font=("Arial", 15),)
+    labelChoix = Label(combo_frame, text="Importer\nune structure :", bg="#404040", fg="white", font=("Arial", 15))
     labelChoix.pack()
 
     liste = [fichier for fichier in listdir(path.join(project_folder, "prefabs/"))]
@@ -331,21 +334,21 @@ if __name__ == "__main__":
     listeCombo.bind("<<ComboboxSelected>>", choix_fichier)
 
 
-    # on créer un bouton (à remplacer par un truc plus propre) pour générer une grille aléatoire
-    random_button = Button(setting_frame, text='générer', command=generation_aleatoire_de_grille)
-    random_button.pack()
+    # on créer l'image pour générer une grille aléatoire
+    random_image = PhotoImage(file=path.join(project_folder, "assets/random.png")).subsample(retrecicement_images)
+    random_canvas = Canvas(setting_frame, width=width_images, height=height_images, bg="#404040", bd=0, highlightthickness=0)
+    random_canvas.create_image(width_images/2, height_images/2, image=random_image)
+        
+    random_canvas.bind("<Button-1>", generation_aleatoire_de_grille)
+    random_canvas.pack()
 
-    # on créer un bouton (à remplacer par un truc plus propre) pour sauvegarder la grille créée
-    save_button = Button(setting_frame, text='save', command=lambda: ask_to_save(grille))
-    save_button.pack()
-
-    # DEBOGAGE
-    debogage_button = Button(setting_frame, text='DEBOGAGE', command=debogage)
-    debogage_button.pack()
-
-    # chnager la taille
-    change_taille_button = Button(setting_frame, text="changer la taille", command=lambda: change_taille(int(input("lignes :\n")), int(input("colonnes :\n"))))
-    change_taille_button.pack()
+    # on créer l'image pour sauvergarder notre grille
+    save_image = PhotoImage(file=path.join(project_folder, "assets/save.png")).subsample(retrecicement_images + 2)
+    save_canvas = Canvas(setting_frame, width=width_images, height=height_images, bg="#404040", bd=0, highlightthickness=0)
+    save_canvas.create_image(width_images/2, height_images/2, image=save_image)
+        
+    save_canvas.bind("<Button-1>", lambda event: ask_to_save(grille))
+    save_canvas.pack()
 
     # on créer l'image pour fermer la fenêtre.
     quit_image = PhotoImage(file=path.join(project_folder, "assets/quit.png")).subsample(retrecicement_images)

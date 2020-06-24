@@ -26,34 +26,14 @@ def verifie_si_grille_vide(grille):
     :returns: si la grille est vide.
     :rtype: bool.
     """
+    # on parcourt toutes les cases de la grille
     for lignes in grille:
         for case in lignes:
+            # si on remarque une seule cellule vivante,
+            # alors la grille n'est pas vide.
             if '1' in str(case):
                 return False
     return True
-            
-
-def sauvegarder_grille(grille, file_name):
-    """Sauvegarde la grille en un fichier texte pouvant être réimporté."""
-    with open(file_name, 'w') as fichier:
-        for l in range(rab_bordure, len(grille) - rab_bordure):
-            for c in range(rab_bordure, len(grille[0]) - rab_bordure):
-                # on écrit chaque case de la grille une à une dans le fichier
-                fichier.write(str(grille[l][c]))
-            fichier.write('\n')
-
-    print("Sauvegarde réussie ! Emplacement : {}.".format(file_name))
-
-
-def lire_fichier(fichier):
-    """Lit le fichier et retourne la grille qu'il contient."""
-    with open(fichier, "r") as fichier:
-        # on retourne une loste par compréhension contenant chaque ligne qu'on lit du fichier.
-        return [[int(x) for x in line.strip()] for line in fichier]
-
-
-def from_grid_to_good_grid(grille):
-    return [[grille[ligne][colonne] for colonne in range(rab_bordure, len(grille[0]) - rab_bordure)] for ligne in range(rab_bordure, len(grille) - rab_bordure)]
 
 
 def compte_voisines_vivantes(grille, x, y):
@@ -171,45 +151,35 @@ def lancer_jeu_console(nb_etapes, grille, affichage=True):
     :rtype: list.
     """
     for x in range(nb_etapes):
+        # on fait passer une génération à la grille
         grille = une_generation(grille)
+        # si on veut afficher la grille :
         if affichage:
             print("{}e génération".format((x + 1)))
-            affiche(from_grid_to_good_grid(grille))
+            affiche(grille)
 
     return grille
 
 
+# variable qui permet de générer une bordure supplémentaire sur la grille.
 rab_bordure = 4
 
 if __name__ == "__main__":
     # On créer la grille de base en y rajoutant une bordure que l'utilisateur ne verra pas :
     grille = grille_vide(14 + (rab_bordure * 2), 36 + (rab_bordure * 2))
+
     # et on modifie nous-même les cases...
-    """
-    grille[1 + rab_bordure][0 + rab_bordure] = 1
-    grille[0 + rab_bordure][2 + rab_bordure] = 1
-    grille[1 + rab_bordure][2 + rab_bordure] = 1
-    grille[2 + rab_bordure][2 + rab_bordure] = 1
-    grille[2 + rab_bordure][1 + rab_bordure] = 1
-    """
     grille[rab_bordure][rab_bordure] = 9
     grille[10 + rab_bordure][2 + rab_bordure] = 1
     grille[9 + rab_bordure][3 + rab_bordure] = 1
     grille[9 + rab_bordure][4 + rab_bordure] = 1
     grille[10 + rab_bordure][4 + rab_bordure] = 1
     grille[11 + rab_bordure][4 + rab_bordure] = 1
-    """
-    grille[8][9] = 1
-    grille[8][10] = 1
-    grille[9][11] = 1
-    grille[10][8] = 1
-    grille[11][9] = 1
-    grille[11][10] = 1
-    """
 
     # on affiche la grille
-    affiche(from_grid_to_good_grid(grille))
+    affiche(grille)
 
     # On demande à l'utilisateur combien de fois il souhaite observer d'étapes
     nb_etapes = reponse_entier("Combien voulez-vous observer d'étapes ?", 1, 10 ** 5)
+    # et on exécute le programme
     lancer_jeu_console(nb_etapes, grille)

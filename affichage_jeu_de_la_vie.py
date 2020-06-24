@@ -1,21 +1,20 @@
 from tkinter import *
 from tkinter.ttk import Combobox
+from tkinter.simpledialog import askinteger
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 from tkinter.messagebox import showerror
-from os import path, system, listdir
-from random import randint
-from pprint import pprint
+from os import path, listdir
+from random import randrange
 import jeu_de_la_vie as jdlv
-import time
 import sys
 
 # on stocke l'endroit ou est notre programme.
 project_folder = path.dirname(__file__)
 
 
-# ===============================================================
-# Fonctions relatives au calculs de coordonnées de la grille
-# ===============================================================
+# ==============================================================================
+# Fonctions relatives à l'interaction entre l'interface et l'utilisateur
+# ==============================================================================
 
 
 def idx_to_coord(i, j):
@@ -29,6 +28,7 @@ def idx_to_coord(i, j):
     :returns: Les coordonnées des deux points pour remplir le rectangle.
     :rtype: un tuple contenant deux tuples.
     """
+    # pour éviter que notre curseur soit déplacé
     i -= jdlv.rab_bordure
     j -= jdlv.rab_bordure
     # on calcule d'abord les coordonnées des points
@@ -52,11 +52,6 @@ def coord_to_idx(x, y):
     """
     return (y // grid_size + jdlv.rab_bordure,
             x // grid_size + jdlv.rab_bordure)
-
-
-# ==============================================================================
-# Fonctions relatives à l'interaction entre l'interface et l'utilisateur
-# ==============================================================================
 
 
 def clic_canevas(event, click_side):
@@ -102,11 +97,17 @@ def display_grid(grid):
             canvas.itemconfig(cellules[c][l], fill=couleur)
 
 
-def clean_grid(event=None):
-    """Nettoie la grille."""
-    global grille, n_generations
+def restart(event=None):
+    """Remet à neuf la grille et l'interface graphique (bouton play/pause)."""
+    global grille, n_generations, id_test, pause
     
     root.after_cancel(after_id)
+
+    # on supprime l'image actuellement affichée dans le canvas
+    play_canvas.delete(id_test)
+    # on affiche celle qu'on souhaite à la place
+    id_test = play_canvas.create_image(width_images/2, height_images/2, image=play_image)
+    pause = False
 
     # on vide la grille et on l'affiche
     grille = jdlv.grille_vide(nlignes, ncolonnes)
@@ -139,7 +140,7 @@ def en_boucle(boucle=True):
 
     if jdlv.verifie_si_grille_vide(grille):
         # si la grille est entièrement vide (bordures comprises), il est inutile de continuer
-        clean_grid()
+        restart()
 
 
 def play(event=None):
@@ -147,12 +148,18 @@ def play(event=None):
     global id_test, pause
 
     if pause:
+        # on arrête l'affichage
         root.after_cancel(after_id)
+
+        # on supprime l'image actuellement affichée dans le canvas
         play_canvas.delete(id_test)
+        # on affiche celle qu'on souhaite à la place
         id_test = play_canvas.create_image(width_images/2, height_images/2, image=play_image)
         pause = False
     else:
+        # on supprime l'image actuellement affichée dans le canvas
         play_canvas.delete(id_test)
+        # on affiche celle qu'on souhaite à la place
         id_test = play_canvas.create_image(width_images/2, height_images/2, image=pause_image)
         pause = True
         en_boucle()
@@ -161,6 +168,32 @@ def play(event=None):
 # ================================================================
 # Bonus : importations de grilles, génération aléatoire, etc
 # ================================================================
+            
+
+def sauvegarder_grille(grille, file_name):
+    """Sauvegarde la grille en un fichier texte.
+    
+    :param grille: grille à sauvergarder.
+    :type: list.
+    :param file_name: chemin absolu où stocker le fichier texte. 
+    :type: str.
+    """
+    with open(file_name, 'w') as fichier:
+        for l in range(jdlv.rab_bordure, len(grille) - jdlv.rab_bordure):
+            for c in range(jdlv.rab_bordure, len(grille[0]) - jdlv.rab_bordure):
+                # on écrit chaque case de la grille une à une dans le fichier
+                fichier.write(str(grille[l][c]))
+            fichier.write('\n')
+
+    print("Sauvegarde réussie ! Emplacement : {}.".format(file_name))
+
+
+def lire_fichier(fichier):
+    """Lit le fichier et retourne la grille qu'il contient."""
+    # ou ouvre le fichier en lecture
+    with open(fichier, "r") as fichier:
+        # on retourne une liste par compréhension contenant chaque ligne qu'on lit du fichier.
+        return [[int(x) for x in line.strip()] for line in fichier]
 
     
 def import_prefabs(fichier):
@@ -168,67 +201,112 @@ def import_prefabs(fichier):
     global nlignes, ncolonnes, grille
 
     # on lit le fichier qui contient la grille :
-    grille_structure = jdlv.lire_fichier(fichier)
+    grille_structure = lire_fichier(fichier)
+
     # on vérifie que la grille a la place de contenir la structure
     if len(grille) - (jdlv.rab_bordure * 2) >= len(grille_structure) and \
        len(grille[0]) - (jdlv.rab_bordure * 2) >= len(grille_structure[0]):
+
         # on parcourt la grille contenant la structure
         for l in range(len(grille_structure)):
             for c in range(len(grille_structure[0])):
                 if grille_structure[l][c] == 1:
                     # on dessine dans la zone visible
                     grille[l + jdlv.rab_bordure][c + jdlv.rab_bordure] = 1
+
         display_grid(grille)
     else:
+        # on prévient l'utilisateur de la taille nécessaire pour afficher la structure
         taille_req = "{}x{}".format(len(grille_structure), len(grille_structure[0]))
         showerror("Erreur : taille", "Taille minimum requise : {}.".format(taille_req))
         print("erreur\ntaille minimum requise : {}.".format(taille_req))
 
 
-def generation_aleatoire_de_grille(event=False):
-    """Génère une grille dont les cellules vivantes (1) sont aléatoirement disposée."""
-    global grille
-    grille = jdlv.grille_vide(nlignes, ncolonnes)
-
-    for ligne in range(nlignes):
-        for colonne in range(ncolonnes):
-            if randint(1, 6) == 1:
-                grille[ligne][colonne] = 1
-
-    display_grid(grille)
-    return grille
-
-
 def choix_fichier(event):
+    """Récupère le choix de l'tuilisateur dans la combobox et importe le fichier du même nom."""
+    # on récupère l'élément choisi
     choix = listeCombo.get()
-    clean_grid()
+
+    # si l'élément est celui-ci, alors l'utilisateur veut choisir lui même le fichier
     if choix == "Choisir...":
+        # on ouvre une boite de dialogue pour demander le fichier à l'utilisateur
         choix = askopenfilename(title="Charger ma grille",
-                                initialdir=path.join(project_folder, "prefabs/"))
+                                initialdir=path.join(project_folder, "saves/"))
+
+        # en cas d'annulation, on ne fait rien
         if choix == '':
             return
     else:
         choix = path.join(project_folder, "prefabs/{}".format(choix))
-
+        
+    # on nettoie la grille pour éviter une superposition chaotique des structures
+    restart()
+    # on envoie le chemin absolu du fichier à cette fonction pour l'ouvrir et l'afficher
     import_prefabs(choix)
 
 
 def ask_to_save(grille, event=False):
+    """Demande à l'utilisateur de sauvegarder sa grille à l'aide d'une boite de dialogue.
+    
+    :param grille: grille de jeu.
+    :type grille: list.
+    """
+    # on récupère le chemin absolu où l'utilisateur veut sauvegarder son fichier 
     file_name = asksaveasfilename(title="Sauvergarder ma grille", 
                                   defaultextension='.txt',
                                   filetypes = [("Fichier Texte", "*.txt"),
                                                ("Tous les fichiers", "*.*")],
                                   initialdir=path.join(project_folder, "saves/"))
+
+    # s'il n'y a pas d'annulation, on sauvegarde la grille à l'emplacement précis.
     if file_name != '':
-        jdlv.sauvegarder_grille(grille, file_name)
+        sauvegarder_grille(grille, file_name)
 
 
-nlignes = 25 + (jdlv.rab_bordure * 2)
+def generation_aleatoire_de_grille(event=False):
+    """Génère une grille dont les cellules vivantes (1) sont aléatoirement disposée.
+    
+    :param pourcentage: pourcentages de cellules vivantes dans la grille.
+    :type pourcentage: float.
+    """
+    global grille
+    grille = jdlv.grille_vide(nlignes, ncolonnes)
+
+    pourcentage = askinteger("Génération aléatoire", "Quel sera le pourcentage de cellules vivantes ?")
+    if not 0 <= pourcentage <= 100:
+        showerror("Erreur", "Non compris entre 0 et 100 !")
+
+    # en cas d'annulation, on ne fait rien
+    if pourcentage == None:
+        return
+
+    for l in range(nlignes):
+        for c in range(ncolonnes):
+            if randrange(100) < pourcentage:
+                grille[l][c] = 1
+
+    display_grid(grille)
+
+    return grille
+
+
+
+# ======================================================
+#               Exécution du programme
+# ======================================================
+
+
+
+# jdlv.rab_bordure correspond aux bordures non visibles par l'utilisateur
+# donc, les entiers sont les bordures visibles par l'utilisateur
+nlignes = 34 + (jdlv.rab_bordure * 2)
 ncolonnes = 47 + (jdlv.rab_bordure * 2)
 grille = jdlv.grille_vide(nlignes, ncolonnes)
 
 # grid_size est la variable qui définit la taille du côté d'un carré (donc sa largeur et sa longueur)
-grid_size = 25
+grid_size = 20
+
+# largeur et hauteur du canvas
 cwidth = (ncolonnes - (jdlv.rab_bordure * 2)) * grid_size
 cheight = (nlignes - (jdlv.rab_bordure * 2)) * grid_size
 
@@ -243,18 +321,23 @@ if __name__ == "__main__":
     # variable qui nous permet de compter le nombre de générations
     n_generations = 0
 
-    # =================
-    # FENETRE
-    # =================
+# ========================================= 
+#                 FENETRE
+# ========================================= 
 
     root = Tk()
     root.title("Jeu de la vie")
     root.iconbitmap(path.join(project_folder, "assets/icon.ico"))
-    root.geometry("{}x{}".format(cwidth + 200, cheight + 150))
+    root.geometry("{}x{}+50+50".format(cwidth + 200, cheight + 150))
     root.resizable(False, False)
 
     main_frame = Frame(root)
     main_frame.pack(side="right", fill="both")
+
+
+# ========================================= 
+#          Canvas de la grille
+# ========================================= 
 
     # creation du canevas
     canvas = Canvas(main_frame, bg='gray', width=cwidth, height=cheight, highlightthickness=0)
@@ -268,6 +351,10 @@ if __name__ == "__main__":
     cellules = [[canvas.create_rectangle(idx_to_coord(l, c), outline="gray") for l in range(nlignes)] for c in range(ncolonnes)]
 
 
+# =======================================================================
+# Barre permettant de controler la simulation (en bas, en gris clair)
+# ========================================= =============================
+
     evolution_frame = Frame(main_frame, bg="#707070", bd=3, relief='ridge')
     evolution_frame.pack(fill="both", expand=True)
 
@@ -280,7 +367,7 @@ if __name__ == "__main__":
     restart_canvas = Canvas(evolution_frame, width=width_images, height=height_images, bg="#707070", bd=0, highlightthickness=0)
     restart_canvas.create_image(width_images/2, height_images/2, image=restart_image)
         
-    restart_canvas.bind("<Button-1>", clean_grid)
+    restart_canvas.bind("<Button-1>", restart)
     restart_canvas.pack(expand=True, side="left")
 
     # on créer l'image pour mettre en pause ou pour reprendre la simulation du jeu
@@ -303,6 +390,10 @@ if __name__ == "__main__":
     next_canvas.pack(expand=True, side="left")
 
 
+# ========================================= 
+#        Barre de widget de gauche
+# ========================================= 
+
     # on créer la frame principale de la fenêtre
     setting_frame = Frame(root, bg="#404040", bd=3, relief='raised')
     setting_frame.pack(fill="both", expand=True)
@@ -318,7 +409,7 @@ if __name__ == "__main__":
     generation_label.pack(expand=True)
 
 
-# on créer une frame pour y mettre la combobox
+    # on créer une frame pour y mettre la combobox
     combo_frame = Frame(setting_frame, bg="#404040")
     combo_frame.pack(expand=True)
 
@@ -347,7 +438,7 @@ if __name__ == "__main__":
     save_canvas = Canvas(setting_frame, width=width_images, height=height_images, bg="#404040", bd=0, highlightthickness=0)
     save_canvas.create_image(width_images/2, height_images/2, image=save_image)
         
-    save_canvas.bind("<Button-1>", lambda event: ask_to_save(grille))
+    save_canvas.bind("<Button-1>", lambda event: ask_to_save(grille=grille))
     save_canvas.pack()
 
     # on créer l'image pour fermer la fenêtre.

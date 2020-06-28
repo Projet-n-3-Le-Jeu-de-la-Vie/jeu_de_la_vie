@@ -81,7 +81,11 @@ def clic_canevas(event, click_side):
 
 def display_grid(grid):
     """Affiche la grille de tableaux de python dans le canvas de Tkinter.
-    Affiche également la grille dans le terminal."""
+    Affiche également la grille dans le terminal.
+    
+    :param grid: grille du jeu.
+    :type grid: list.
+    """
     # On l'affiche dans le terminal
     jdlv.affiche(grid)
 
@@ -98,7 +102,7 @@ def display_grid(grid):
 
 
 def restart(event=None):
-    """Remet à neuf la grille et l'interface graphique (bouton play/pause)."""
+    """Remet à neuf la grille et l'interface graphique (bouton play/pause & compteur)."""
     global grille, n_generations, id_test, pause
     
     root.after_cancel(after_id)
@@ -124,19 +128,24 @@ def restart(event=None):
 
 
 def en_boucle(boucle=True):
-    """Permet de jouer en boucle la simulation du jeu de la vie."""
+    """Permet de jouer en boucle la simulation du jeu de la vie.
+    
+    :param boucle: spécifie si la fonction doit se répéter.
+    :type boucle: bool.
+    """
     global grille, n_generations, after_id
-
-    grille = jdlv.une_generation(grille)
-    display_grid(grille)
 
     # on ajoute une génération au label, et on l'actualise
     n_generations += 1
     VarLabelGenerations.set(n_generations)
 
+    grille = jdlv.une_generation(grille)
+    print("{}e génération :".format(n_generations))
+    display_grid(grille)
+
     if boucle:
         # et on refait appel à cette fonction la fonction
-        after_id = root.after(2, en_boucle)
+        after_id = root.after(vitesse_affichage, en_boucle)
 
     if jdlv.verifie_si_grille_vide(grille):
         # si la grille est entièrement vide (bordures comprises), il est inutile de continuer
@@ -237,7 +246,7 @@ def choix_fichier(event):
         if choix == '':
             return
     else:
-        choix = path.join(project_folder, "prefabs/{}".format(choix))
+        choix = path.join(project_folder, "prefabs/{}.txt".format(choix))
         
     # on nettoie la grille pour éviter une superposition chaotique des structures
     restart()
@@ -290,6 +299,17 @@ def generation_aleatoire_de_grille(event=False):
     return grille
 
 
+def change_speed(v):
+    """Fonction qui change la vitesse de la méthode after lorsque
+    l'utilisateur déplace le slider (Scale)."""
+    global vitesse_affichage
+
+    if slider.get() < 1:
+        vitesse_affichage = 1
+    else:
+        vitesse_affichage = slider.get()
+
+
 
 # ======================================================
 #               Exécution du programme
@@ -297,23 +317,26 @@ def generation_aleatoire_de_grille(event=False):
 
 
 
-# jdlv.rab_bordure correspond aux bordures non visibles par l'utilisateur
-# donc, les entiers sont les bordures visibles par l'utilisateur
-nlignes = 34 + (jdlv.rab_bordure * 2)
-ncolonnes = 47 + (jdlv.rab_bordure * 2)
-grille = jdlv.grille_vide(nlignes, ncolonnes)
-
-# grid_size est la variable qui définit la taille du côté d'un carré (donc sa largeur et sa longueur)
-grid_size = 20
-
-# largeur et hauteur du canvas
-cwidth = (ncolonnes - (jdlv.rab_bordure * 2)) * grid_size
-cheight = (nlignes - (jdlv.rab_bordure * 2)) * grid_size
-
 if __name__ == "__main__":
+
+    # jdlv.rab_bordure correspond aux bordures non visibles par l'utilisateur
+    # donc, les entiers sont les bordures visibles par l'utilisateur
+    nlignes = 55 + (jdlv.rab_bordure * 2)
+    ncolonnes = 70 + (jdlv.rab_bordure * 2)
+    grille = jdlv.grille_vide(nlignes, ncolonnes)
+
+    # grid_size est la variable qui définit la taille du côté d'un carré (donc sa largeur et sa longueur)
+    grid_size = 15
+
+    # largeur et hauteur du canvas
+    cwidth = (ncolonnes - (jdlv.rab_bordure * 2)) * grid_size
+    cheight = (nlignes - (jdlv.rab_bordure * 2)) * grid_size
 
     # variable qui permet de stopper l'exécution en boucle de l'affichage de la fenêtre
     after_id = "after#0"
+
+    # variable qui permet de gérer la vitesse d'actualisation de la grille
+    vitesse_affichage = 2
 
     # variable qui permet de savoir si le jeu est en pause ou non
     pause = False
@@ -327,67 +350,9 @@ if __name__ == "__main__":
 
     root = Tk()
     root.title("Jeu de la vie")
-    root.iconbitmap(path.join(project_folder, "assets/icon.ico"))
-    root.geometry("{}x{}+50+50".format(cwidth + 200, cheight + 150))
+    root.iconphoto(True, PhotoImage(file=path.join(project_folder, "assets", "icon.png")))
+    root.geometry("{}x{}+0+0".format(cwidth + 500, cheight))
     root.resizable(False, False)
-
-    main_frame = Frame(root)
-    main_frame.pack(side="right", fill="both")
-
-
-# ========================================= 
-#          Canvas de la grille
-# ========================================= 
-
-    # creation du canevas
-    canvas = Canvas(main_frame, bg='gray', width=cwidth, height=cheight, highlightthickness=0)
-    canvas.pack()
-
-    # si on clique sur le canevas, on appelle la fonction clic_canevas
-    canvas.bind("<Button-1>", lambda event: clic_canevas(event, "left"))
-    canvas.bind("<Button-3>", lambda event: clic_canevas(event, "right"))
-
-    # on dessine la grille et on stocke les cases (pour les modifier plus tard)
-    cellules = [[canvas.create_rectangle(idx_to_coord(l, c), outline="gray") for l in range(nlignes)] for c in range(ncolonnes)]
-
-
-# =======================================================================
-# Barre permettant de controler la simulation (en bas, en gris clair)
-# ========================================= =============================
-
-    evolution_frame = Frame(main_frame, bg="#707070", bd=3, relief='ridge')
-    evolution_frame.pack(fill="both", expand=True)
-
-    retrecicement_images = 5
-    width_images = 512/retrecicement_images
-    height_images = 512/retrecicement_images
-
-    # on créer l'image pour mettre la grille à l'état d'origine.
-    restart_image = PhotoImage(file=path.join(project_folder, "assets/restart.png")).subsample(retrecicement_images)
-    restart_canvas = Canvas(evolution_frame, width=width_images, height=height_images, bg="#707070", bd=0, highlightthickness=0)
-    restart_canvas.create_image(width_images/2, height_images/2, image=restart_image)
-        
-    restart_canvas.bind("<Button-1>", restart)
-    restart_canvas.pack(expand=True, side="left")
-
-    # on créer l'image pour mettre en pause ou pour reprendre la simulation du jeu
-    play_image = PhotoImage(file=path.join(project_folder, "assets/play.png")).subsample(retrecicement_images)
-    play_canvas = Canvas(evolution_frame, width=width_images, height=height_images, bg='#707070', bd=0, highlightthickness=0)
-    id_test = play_canvas.create_image(width_images/2, height_images/2, image=play_image)
-
-    play_canvas.bind("<Button-1>", play)
-    play_canvas.pack(expand=True, side="left")
-
-    # on charge l'image de pause, sans l'afficher
-    pause_image = PhotoImage(file=path.join(project_folder, "assets/pause.png")).subsample(retrecicement_images)
-
-    # on créer l'image pour passer à la génération suivante
-    next_image = PhotoImage(file=path.join(project_folder, "assets/next.png")).subsample(retrecicement_images)
-    next_canvas = Canvas(evolution_frame, width=width_images, height=height_images, bg="#707070", bd=0, highlightthickness=0)
-    next_canvas.create_image(width_images/2, height_images/2, image=next_image)
-        
-    next_canvas.bind("<Button-1>", lambda event: en_boucle(False))
-    next_canvas.pack(expand=True, side="left")
 
 
 # ========================================= 
@@ -395,8 +360,8 @@ if __name__ == "__main__":
 # ========================================= 
 
     # on créer la frame principale de la fenêtre
-    setting_frame = Frame(root, bg="#404040", bd=3, relief='raised')
-    setting_frame.pack(fill="both", expand=True)
+    setting_frame = Frame(root, width=400, bg="#404040", bd=3, relief='raised')
+    setting_frame.pack(fill="both", expand=True, side="left")
 
 
     # Création d'une variable de contrôle qui permet de modifier le text du label sans 
@@ -405,7 +370,8 @@ if __name__ == "__main__":
     VarLabelGenerations.set(n_generations)
 
     # un label pour afficher les victoires/matchs nuls
-    generation_label = Label(setting_frame, width=5, height=2, textvariable=VarLabelGenerations, font=("Arial", 20), bg="#404040", fg="red", bd=5, relief='sunken')
+    generation_label = Label(setting_frame, width=5, height=2, textvariable=VarLabelGenerations,
+                            font=("Arial", 20), bg="#404040", fg="red", bd=5, relief='sunken')
     generation_label.pack(expand=True)
 
 
@@ -413,10 +379,12 @@ if __name__ == "__main__":
     combo_frame = Frame(setting_frame, bg="#404040")
     combo_frame.pack(expand=True)
 
-    labelChoix = Label(combo_frame, text="Importer\nune structure :", bg="#404040", fg="white", font=("Arial", 15))
+    labelChoix = Label(combo_frame, text="Importer\nune structure :", bg="#404040", 
+                      fg="white",font=("Arial", 15, "bold"))
     labelChoix.pack()
 
-    liste = [fichier for fichier in listdir(path.join(project_folder, "prefabs/"))]
+    # on charge le nom de toutes les structures préfabriquées dans une liste sans leur extension .txt
+    liste = [f[:len(f)-4] for f in listdir(path.join(project_folder, "prefabs/"))]
     liste.append("Choisir...")
 
     listeCombo = Combobox(combo_frame, values=liste)
@@ -424,31 +392,122 @@ if __name__ == "__main__":
 
     listeCombo.bind("<<ComboboxSelected>>", choix_fichier)
 
-
-    # on créer l'image pour générer une grille aléatoire
-    random_image = PhotoImage(file=path.join(project_folder, "assets/random.png")).subsample(retrecicement_images)
-    random_canvas = Canvas(setting_frame, width=width_images, height=height_images, bg="#404040", bd=0, highlightthickness=0)
-    random_canvas.create_image(width_images/2, height_images/2, image=random_image)
-        
-    random_canvas.bind("<Button-1>", generation_aleatoire_de_grille)
-    random_canvas.pack()
+    # données pour afficher les images
+    retrecicement_images = 5
+    width_images = 512/retrecicement_images
+    height_images = 512/retrecicement_images
 
     # on créer l'image pour sauvergarder notre grille
-    save_image = PhotoImage(file=path.join(project_folder, "assets/save.png")).subsample(retrecicement_images + 2)
-    save_canvas = Canvas(setting_frame, width=width_images, height=height_images, bg="#404040", bd=0, highlightthickness=0)
+    save_image = PhotoImage(file=path.join(project_folder, "assets/save.png")).subsample(retrecicement_images)
+    save_canvas = Canvas(setting_frame, width=width_images, height=height_images, 
+                        bg="#404040", bd=0, highlightthickness=0)
     save_canvas.create_image(width_images/2, height_images/2, image=save_image)
-        
     save_canvas.bind("<Button-1>", lambda event: ask_to_save(grille=grille))
     save_canvas.pack()
 
     # on créer l'image pour fermer la fenêtre.
     quit_image = PhotoImage(file=path.join(project_folder, "assets/quit.png")).subsample(retrecicement_images)
-    quit_canvas = Canvas(setting_frame, width=width_images, height=height_images, bg="#404040", bd=0, highlightthickness=0)
+    quit_canvas = Canvas(setting_frame, width=width_images, height=height_images, 
+                        bg="#404040", bd=0, highlightthickness=0)
     quit_canvas.create_image(width_images/2, height_images/2, image=quit_image)
         
     quit_canvas.bind("<Button-1>", sys.exit)
     quit_canvas.pack(expand=True)
 
+
+# ========================================= 
+#          Canvas de la grille
+# ========================================= 
+
+    # creation du canevas (le bg bleu sert à remarquer les possibles imperfections du .pack())
+    canvas = Canvas(root, bg='blue', width=cwidth-60, height=cheight, highlightthickness=0)
+    canvas.pack(fill="both", expand=True, side="left")
+
+    # si on clique sur le canevas, on appelle la fonction clic_canevas
+    canvas.bind("<Button-1>", lambda event: clic_canevas(event, "left"))
+    canvas.bind("<Button-3>", lambda event: clic_canevas(event, "right"))
+
+    # on dessine la grille et on stocke les cases (pour les modifier plus tard)
+    cellules = [[canvas.create_rectangle(idx_to_coord(l, c), outline="gray") 
+                for l in range(nlignes)] for c in range(ncolonnes)]
+
+
+# =======================================================================
+#        Barre de droite permettant de controler la simulation
+# ========================================= =============================
+
+    # frame qui contient tous les autres widgets dans cette partie de la fenêtre
+    evolution_frame = Frame(root, width=300, bg="#404040", bd=3, relief='ridge')
+    evolution_frame.pack(fill="both", expand=True, side="left")
+
+    # frame qui contient les boutons et le label
+    control_buttons = Frame(evolution_frame, bg="#404040")
+    control_buttons.pack(side="top", expand=True)
+
+    # Prévient l'utilisateur de ce à quoi servent les boutons dans cette frame.
+    labelControles = Label(control_buttons, text="Contrôles  :", bg="#404040", 
+                          fg="white", font=("Helvetica", 20, "bold"))
+    labelControles.pack()
+
+    # frames qui permettent d'avoir un alignement des boutons agréable au regard
+    row_one = Frame(control_buttons, bg="#555555")
+    row_one.pack(side="top")
+
+    row_two = Frame(control_buttons, bg="#555555")
+    row_two.pack(side="bottom")
+
+    # on créer l'image pour mettre la grille à l'état d'origine.
+    restart_image = PhotoImage(file=path.join(project_folder, "assets/restart1.png")).subsample(retrecicement_images)
+    restart_canvas = Canvas(row_one, width=width_images, height=height_images, 
+                            bg="#656565", bd=3, relief="sunken", highlightthickness=0)
+    restart_canvas.create_image(width_images/2, height_images/2, image=restart_image)
+
+    restart_canvas.bind("<Button-1>", restart)
+    restart_canvas.pack(side="left")
+
+    # on créer l'image pour passer à la génération suivante
+    next_image = PhotoImage(file=path.join(project_folder, "assets/next.png")).subsample(retrecicement_images)
+    next_canvas = Canvas(row_one, width=width_images, height=height_images, 
+                        bg="#656565", bd=3, relief="sunken", highlightthickness=0)
+    next_canvas.create_image(width_images/2, height_images/2, image=next_image)
+        
+    next_canvas.bind("<Button-1>", lambda event: en_boucle(False))
+    next_canvas.pack(side="left")
+
+    # on créer l'image pour mettre en pause ou pour reprendre la simulation du jeu
+    play_image = PhotoImage(file=path.join(project_folder, "assets/play1.png")).subsample(retrecicement_images)
+    play_canvas = Canvas(row_two, width=width_images, height=height_images, 
+                        bg='#656565', bd=3, relief="sunken", highlightthickness=0)
+    id_test = play_canvas.create_image(width_images/2, height_images/2, image=play_image)
+
+    play_canvas.bind("<Button-1>", play)
+    play_canvas.pack(expand=True)
+
+    # on charge l'image de pause, sans l'afficher
+    pause_image = PhotoImage(file=path.join(project_folder, "assets/pause.png")).subsample(retrecicement_images)
+
+    # on créer l'image pour générer une grille aléatoire
+    random_image = PhotoImage(file=path.join(project_folder, "assets/random.png")).subsample(retrecicement_images)
+    random_canvas = Canvas(evolution_frame, width=width_images, height=height_images, 
+                          bg="#404040", bd=0, highlightthickness=0)
+    random_canvas.create_image(width_images/2, height_images/2, image=random_image)
+        
+    random_canvas.bind("<Button-1>", generation_aleatoire_de_grille)
+    random_canvas.pack(expand=True)
+    slider_frame = Frame(evolution_frame, bg="#404040")
+    slider_frame.pack(expand=True)
+
+    labelSlider = Label(slider_frame, text="Vitesse  :", bg="#404040", 
+                       fg="white", font=("Arial", 15, "bold"))
+    labelSlider.pack()
+
+    slider = Scale(slider_frame, orient='horizontal', bg="#404040", fg="white", 
+                  from_=0, to=500, resolution=1, tickinterval=100, length=220, 
+                  command=change_speed, highlightthickness=0)
+    slider.pack()
+    slider.set(2)
+ 
+    # on affiche une première fois la grille
     display_grid(grille)
 
     root.mainloop()

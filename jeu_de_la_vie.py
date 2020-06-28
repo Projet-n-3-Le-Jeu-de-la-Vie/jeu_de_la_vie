@@ -67,8 +67,8 @@ def affiche(grille):
     :param grille: Table de jeu.
     :type grille: list.
     """
-    for ligne in range(len(grille)):
-        for colonne in range(len(grille[0])):
+    for ligne in range(rab_bordure, len(grille) - rab_bordure):
+        for colonne in range(rab_bordure, len(grille[0]) - rab_bordure):
             print(grille[ligne][colonne], end=' ')
         print()
     print()

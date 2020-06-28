@@ -326,7 +326,7 @@ if __name__ == "__main__":
     grille = jdlv.grille_vide(nlignes, ncolonnes)
 
     # grid_size est la variable qui définit la taille du côté d'un carré (donc sa largeur et sa longueur)
-    grid_size = 15
+    grid_size = 12
 
     # largeur et hauteur du canvas
     cwidth = (ncolonnes - (jdlv.rab_bordure * 2)) * grid_size
